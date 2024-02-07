@@ -1,34 +1,35 @@
 import express from "express";
 import { v4 as uuidv4 } from "uuid";
+import { authenticateToken } from "../middleware/authenticateToken.js"; 
 
 const router = express.Router();
 
 export default function (db) {
-  router.post("/create", async (req, res) => {
-    const { name, maxParticipants, durationInMinutes } = req.body;
-    const roomToken = uuidv4();
-    const createdAt = new Date();
-
-    const maxDuration = 60;
-    const duration = Math.min(Math.max(durationInMinutes, 1), maxDuration);
-    const expiresAt = new Date(createdAt.getTime() + duration * 60000);
-
-    try {
-      const newRoom = await db.collection("rooms").insertOne({
-        name,
-        maxParticipants,
-        duration: duration,
-        roomToken,
-        createdAt,
-        expiresAt,
+    router.post("/create", authenticateToken, async (req, res) => {
+        const { name, maxParticipants, durationInMinutes } = req.body;
+        const roomToken = uuidv4();
+        const createdAt = new Date();
+      
+        const maxDuration = 60;
+        const duration = Math.min(Math.max(durationInMinutes, 1), maxDuration);
+        const expiresAt = new Date(createdAt.getTime() + duration * 60000);
+      
+        try {
+          const newRoom = await db.collection("rooms").insertOne({
+            name,
+            maxParticipants,
+            duration: duration,
+            roomToken,
+            createdAt,
+            expiresAt,
+          });
+      
+          const roomLink = `http://yourdomain.com/rooms/join/${roomToken}`;
+          res.status(201).json({ roomLink, id: newRoom.insertedId });
+        } catch (error) {
+          res.status(500).send("Error creating the room: " + error.message);
+        }
       });
-
-      const roomLink = `http://yourdomain.com/rooms/join/${roomToken}`;
-      res.status(201).json({ roomLink, id: newRoom.insertedId });
-    } catch (error) {
-      res.status(500).send("Error creating the room: " + error.message);
-    }
-  });
 
   router.get("/join/:token", async (req, res) => {
     const { token } = req.params;

@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-const secretKey = "VOTER";
+const secretKey = "VOTER"; 
 
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];

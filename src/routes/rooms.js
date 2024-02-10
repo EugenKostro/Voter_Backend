@@ -1,6 +1,6 @@
 import express from "express";
 import { v4 as uuidv4 } from "uuid";
-import { authenticateToken } from "../middleware/authenticateToken.js";
+import { authenticateToken, trackUser } from "../middleware/authenticateToken.js";
 
 const router = express.Router();
 
@@ -68,46 +68,41 @@ export default function (db) {
     res.json(room);
   });
 
-  router.post("/vote/:roomToken", authenticateToken, async (req, res) => {
+router.post("/vote/:roomToken", trackUser, async (req, res) => {
     const { roomToken } = req.params;
     const { vote } = req.body;
-
+    const userIdentifier = req.user ? req.user.userId : req.userIdentifier;
+  
     try {
-      const room = await db
-        .collection("rooms")
-        .findOne({ roomToken: roomToken });
-      if (!room) {
-        return res.status(404).send("Room not found.");
-      }
-
-      if (room.creatorId && room.creatorId.toString() === req.user.userId) {
-        return res.status(403).send("Room creators are not allowed to vote.");
-      }
-
-      const hasVoted =
-        room.votes &&
-        room.votes.some((vote) => vote.userId.toString() === req.user.userId);
-      if (hasVoted) {
+      const existingVote = await db.collection("rooms").findOne({
+        roomToken,
+        "votes.userIdentifier": userIdentifier
+      });
+  
+      if (existingVote) {
         return res.status(400).send("You have already voted.");
       }
-
-      const updateResult = await db
-        .collection("rooms")
-        .updateOne(
-          { roomToken: roomToken },
-          { $push: { votes: { userId: req.user.userId, vote: vote } } }
-        );
-
-      if (updateResult.matchedCount === 1 && updateResult.modifiedCount === 1) {
+  
+      const result = await db.collection("rooms").updateOne(
+        { roomToken },
+        {
+          $push: {
+            votes: { userIdentifier, vote }
+          }
+        }
+      );
+  
+      if (result.modifiedCount === 1) {
         res.status(200).send("Vote registered successfully.");
       } else {
-        res.status(500).send("Failed to register the vote.");
+        throw new Error("Could not register vote.");
       }
     } catch (error) {
-      console.error("Error during voting:", error);
+      console.error("Error during voting process:", error);
       res.status(500).send("An error occurred while processing your vote.");
     }
   });
+  
 
   return router;
 }

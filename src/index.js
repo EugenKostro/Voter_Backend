@@ -4,11 +4,15 @@ import { MongoClient } from "mongodb";
 import roomRoutes from "./routes/rooms.js";
 import cors from "cors";
 import userRoutes from "./routes/users.js";
-import { authenticateToken } from "./middleware/authenticateToken.js"; 
+import { authenticateToken, trackUser } from "./middleware/authenticateToken.js"; 
+import cookieParser from 'cookie-parser';
 
+const router = express.Router();
 const app = express();
 app.use(express.json());
 app.use(cors());
+router.use(authenticateToken);
+app.use(cookieParser());
 
 const port = process.env.PORT || 3000;
 const uri = "mongodb+srv://voter:voter@clustervoter.uzt95d4.mongodb.net/?retryWrites=true&w=majority";

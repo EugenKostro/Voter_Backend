@@ -68,40 +68,40 @@ export default function (db) {
     res.json(room);
   });
 
-router.post("/vote/:roomToken", trackUser, async (req, res) => {
+  router.post("/vote/:roomToken", trackUser, async (req, res) => {
     const { roomToken } = req.params;
     const { vote } = req.body;
-    const userIdentifier = req.user ? req.user.userId : req.userIdentifier;
+    const userIdentifier = req.user ? req.user.userId : req.userIdentifier; // Koristi userId za autentificirane korisnike ili userIdentifier za anonimne
   
     try {
-      const existingVote = await db.collection("rooms").findOne({
-        roomToken,
-        "votes.userIdentifier": userIdentifier
-      });
-  
-      if (existingVote) {
-        return res.status(400).send("You have already voted.");
+      const room = await db.collection("rooms").findOne({ roomToken });
+      if (!room) {
+        return res.status(404).json({ message: "Room not found." });
       }
   
-      const result = await db.collection("rooms").updateOne(
+      // Provjera je li korisnik već glasao
+      const hasVoted = room.votes.some(v => req.user ? v.userId === userIdentifier : v.userIdentifier === userIdentifier);
+      if (hasVoted) {
+        return res.status(400).json({ message: "You have already voted." });
+      }
+  
+      // Ažuriranje sobe s novim glasom
+      const updateResult = await db.collection("rooms").updateOne(
         { roomToken },
-        {
-          $push: {
-            votes: { userIdentifier, vote }
-          }
-        }
+        { $push: { votes: { userId: req.user ? userIdentifier : null, userIdentifier: req.user ? null : userIdentifier, vote } } }
       );
   
-      if (result.modifiedCount === 1) {
-        res.status(200).send("Vote registered successfully.");
+      if(updateResult.modifiedCount === 1) {
+        res.status(200).json({ message: "Vote registered." });
       } else {
-        throw new Error("Could not register vote.");
+        throw new Error("Vote could not be registered");
       }
     } catch (error) {
       console.error("Error during voting process:", error);
-      res.status(500).send("An error occurred while processing your vote.");
+      res.status(500).json({ message: "An error occurred while processing your vote." });
     }
   });
+  
   
 
   return router;

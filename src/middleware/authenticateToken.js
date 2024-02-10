@@ -21,12 +21,10 @@ export const authenticateToken = (req, res, next) => {
 };
 
 export const trackUser = (req, res, next) => {
-    if (!req.cookies.userIdentifier && !req.user) {
-        const userIdentifier = randomBytes(16).toString('hex'); 
-        res.cookie('userIdentifier', userIdentifier, { maxAge: 900000, httpOnly: true });
-        req.userIdentifier = userIdentifier;
-    } else if (req.cookies.userIdentifier) {
-        req.userIdentifier = req.cookies.userIdentifier;
-    }
-    next();
+  if (!req.cookies.userIdentifier && !req.user) {
+    const userIdentifier = randomBytes(16).toString('hex');
+    res.cookie('userIdentifier', userIdentifier, { maxAge: 900000, httpOnly: true, sameSite: 'Strict' });
+}
+req.userIdentifier = req.cookies.userIdentifier || randomBytes(16).toString('hex');
+next();
 };

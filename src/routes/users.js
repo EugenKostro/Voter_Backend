@@ -3,6 +3,7 @@ import registerHandler from "../handlers/registerHandler.js";
 import loginHandler from "../handlers/loginHandler.js";
 
 export default function (db) {
+  
   const router = Router();
 
   router.post("/register", (req, res) => registerHandler(req, res, db));

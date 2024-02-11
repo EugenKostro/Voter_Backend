@@ -71,21 +71,23 @@ export default function (db) {
   router.post("/vote/:roomToken", trackUser, async (req, res) => {
     const { roomToken } = req.params;
     const { vote } = req.body;
-    const userIdentifier = req.user ? req.user.userId : req.userIdentifier; // Koristi userId za autentificirane korisnike ili userIdentifier za anonimne
-  
+    const userIdentifier = req.user ? req.user.userId : req.userIdentifier; 
+
     try {
       const room = await db.collection("rooms").findOne({ roomToken });
       if (!room) {
         return res.status(404).json({ message: "Room not found." });
       }
+
+      if (room.votes.length >= room.maxParticipants) {
+        return res.status(400).json({ message: "Glasanje je završeno. Dosegnut je maksimalni broj glasova." });
+      }
   
-      // Provjera je li korisnik već glasao
       const hasVoted = room.votes.some(v => req.user ? v.userId === userIdentifier : v.userIdentifier === userIdentifier);
       if (hasVoted) {
         return res.status(400).json({ message: "You have already voted." });
       }
   
-      // Ažuriranje sobe s novim glasom
       const updateResult = await db.collection("rooms").updateOne(
         { roomToken },
         { $push: { votes: { userId: req.user ? userIdentifier : null, userIdentifier: req.user ? null : userIdentifier, vote } } }
@@ -101,6 +103,33 @@ export default function (db) {
       res.status(500).json({ message: "An error occurred while processing your vote." });
     }
   });
+
+  router.post("/end/:roomToken", authenticateToken, async (req, res) => {
+    const { roomToken } = req.params;
+  
+    try {
+      const room = await db.collection("rooms").findOne({ roomToken });
+      if (!room) {
+        return res.status(404).send("Room not found.");
+      }
+      if (room.votes.length < room.maxParticipants) {
+        return res.status(400).send("Cannot end voting before all participants have voted.");
+      }
+  
+      const results = room.votes.reduce((acc, vote) => {
+        acc[vote.vote] = (acc[vote.vote] || 0) + 1;
+        return acc;
+      }, {});
+  
+      await db.collection("rooms").updateOne({ roomToken }, { $set: { isVotingEnded: true } });
+  
+      res.json({ message: "Voting ended successfully.", results });
+    } catch (error) {
+      console.error("Error ending voting:", error);
+      res.status(500).send("An error occurred.");
+    }
+  });
+  
   
   
 

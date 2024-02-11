@@ -7,7 +7,7 @@ import { authenticateToken } from "./middleware/authenticateToken.js";
 import cookieParser from 'cookie-parser';
 
 const app = express();
-app.use(cookieParser()); // Pravilno postavljanje cookie-parsera
+app.use(cookieParser()); 
 app.use(express.json());
 app.use(cors());
 
@@ -21,8 +21,8 @@ async function main() {
     console.log("Successfully connected to MongoDB!");
     const db = client.db("Voter");
 
-    // Dodavanje ruta s autentifikacijskim middlewareom gdje je potrebno
-    app.use("/rooms", roomRoutes(db)); // Ako je potrebna autentifikacija za sve rute unutar /rooms, trebate dodati authenticateToken unutar roomRoutes definicije
+
+    app.use("/rooms", roomRoutes(db)); 
     app.use("/user", userRoutes(db));
 
     app.listen(port, () => {

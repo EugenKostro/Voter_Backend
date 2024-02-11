@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { compare } from "bcrypt";
 
-const secretKey = process.env.JWT_SECRET;
+const secretKey = "VOTER";
 
 export default async function loginHandler(req, res, db) {
   const { email, password } = req.body;

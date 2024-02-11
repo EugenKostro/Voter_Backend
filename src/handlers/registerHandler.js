@@ -1,7 +1,7 @@
 import { hash } from "bcrypt";
 import jwt from "jsonwebtoken";
 
-const secretKey = "VOTER";
+const secretKey = process.env.JWT_SECRET;
 
 async function registerHandler(req, res, db) {
   const { firstName, lastName, email, password } = req.body;

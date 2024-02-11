@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
 import cookieParser from 'cookie-parser';
 
-const secretKey = 'VOTER'; 
+const secretKey = process.env.JWT_SECRET; 
 
 export const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];

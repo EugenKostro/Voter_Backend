@@ -78,7 +78,7 @@ export default function (db) {
       if (!room) {
         return res.status(404).json({ message: "Room not found." });
       }
-
+ 
       if (room.votes.length >= room.maxParticipants) {
         return res.status(400).json({ message: "Glasanje je završeno. Dosegnut je maksimalni broj glasova." });
       }
